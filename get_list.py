@@ -1,7 +1,7 @@
 import os 
 
 dataset = 'office31'
-dataset_path ='/data/liruizhe'
+dataset_path ='./data'
 if dataset == 'office31':
 	domains = ['amazon', 'dslr', 'webcam']
 elif dataset == 'office-caltech':
