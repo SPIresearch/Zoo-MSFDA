@@ -600,8 +600,8 @@ def pse_training(outputs,all_label,args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='CAiDA')
     parser.add_argument('--t', type=int, default=3, help="target")
-    parser.add_argument('--max_epoch', type=int, default=10, help="max iterations")
-    parser.add_argument('--interval', type=int, default=10)
+    parser.add_argument('--max_epoch', type=int, default=15, help="max iterations")
+    parser.add_argument('--interval', type=int, default=15)
     parser.add_argument('--batch_size', type=int, default=128, help="batch_size")
     parser.add_argument('--worker', type=int, default=4, help="number of workers")
     parser.add_argument('--dset', type=str, default='office-home', choices=['office31', 'office-home', 'domainnet'])
@@ -622,7 +622,7 @@ if __name__ == "__main__":
     parser.add_argument('--config_file', type=str, default="office-home_main")
     parser.add_argument('--trans_method', type=str, default="SUTE", choices=['SUTE', 'NMI', 'ANE','SND','MMD','A-distance','MDE','LogME_pse','LogME_true','LEEP_pse','LEEP_true'])
     parser.add_argument('--diversity', type=bool, default=True)
-    parser.add_argument('--data_folder', type=str, default='/data/liruizhe/')
+    parser.add_argument('--data_folder', type=str, default='./data/')
 
     args = parser.parse_args()
 
