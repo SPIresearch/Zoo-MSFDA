@@ -361,7 +361,7 @@ if __name__ == "__main__":
     parser.add_argument('--s', type=int, default=0, help="source")
     parser.add_argument('--t', type=int, default=1, help="target")
     parser.add_argument('--max_epoch', type=int, default=50, help="max iterations")
-    parser.add_argument('--batch_size', type=int, default=64, help="batch_size")
+    parser.add_argument('--batch_size', type=int, default=128, help="batch_size")
     parser.add_argument('--worker', type=int, default=4, help="number of workers")
     parser.add_argument('--dset', type=str, default='office-home', choices=['office31', 'office-home', 'domainnet'])
     parser.add_argument('--lr', type=float, default=1e-3, help="learning rate")
@@ -375,7 +375,7 @@ if __name__ == "__main__":
     parser.add_argument('--trte', type=str, default='val', choices=['full', 'val'])
     parser.add_argument('--fix', type=bool, default=False)
     parser.add_argument('--feature_save_dir', type=str, default='./features')
-    parser.add_argument('--data_folder', type=str, default='/data/liruizhe/')
+    parser.add_argument('--data_folder', type=str, default='./data/')
     parser.add_argument('--optimizer', type=str, default='sgd')
     args = parser.parse_args()
 
