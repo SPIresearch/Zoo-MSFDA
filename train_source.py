@@ -1,7 +1,6 @@
 import argparse
-import os, sys
+import os
 import os.path as osp
-import torchvision
 import numpy as np
 import torch
 
@@ -15,7 +14,7 @@ from data_list import ImageList
 import random, pdb, math, copy
 from loss_function import CrossEntropyLabelSmooth
 from scipy.spatial.distance import cdist
-from loss_function import ce_loss2,KL
+
 def op_copy(optimizer):
     for param_group in optimizer.param_groups:
         param_group['lr0'] = param_group['lr']
