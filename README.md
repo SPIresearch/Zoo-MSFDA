@@ -12,7 +12,7 @@ Or you can simply run the following to train all source models
 ./source_training.sh
 ```
 
-Then, run the following to generate configs
+Then, run the following to generate configs for Zoo_MSFDA
 
 ```bash
 python extract_benchmark.py
