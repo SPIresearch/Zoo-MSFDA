@@ -1,46 +1,19 @@
 import argparse
-from cmath import exp
+import torch
 import os, sys
 import os.path as osp
-import torchvision
 import numpy as np
-import torch
-
-import scipy.io
+from cmath import exp
 import torch.nn as nn
 import torch.optim as optim
 from torchvision import transforms
 import network, loss_function
 from torch.utils.data import DataLoader
-from data_list import ImageList,Splited_List
-import random, pdb, math, copy
-from tqdm import tqdm
-import pandas as pd
-from scipy.spatial.distance import cdist
-from sklearn.metrics import confusion_matrix
-from sklearn.cluster import KMeans
-import scipy.stats as stats
-from torch.optim.lr_scheduler import StepLR
-from scipy.io import loadmat
+from utils import *
 import loss_function
 from model_selection_tools import *
-from utils import *
-import argparse
-import os, sys
-import os.path as osp
-import torchvision
-import numpy as np
-import torch
-
-import scipy.io
-import torch.nn as nn
-import torch.optim as optim
-from torchvision import transforms
-import network, loss_function
-from torch.utils.data import DataLoader
 from data_list import ImageList,ImageList_idx,ImageList_idx_fast
-import random, pdb, math, copy
-from loss_function import CrossEntropyLabelSmooth,CrossEntropy1
+from loss_function import CrossEntropy1
 from aggretation import OursEnsemble
 import warnings
 
