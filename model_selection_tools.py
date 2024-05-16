@@ -1,31 +1,17 @@
-import argparse
-from cmath import exp
-import os, sys
-import os.path as osp
-import torchvision
-import numpy as np
+import copy
 import torch
-import torch.nn.functional as F
-import scipy.io
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
-from torchvision import transforms
-import network, loss_function
-from torch.utils.data import DataLoader
-from data_list import ImageList,Splited_List
-import random, pdb, math, copy
-from tqdm import tqdm
+import  loss_function
+import numpy as np
 import pandas as pd
 from scipy.spatial.distance import cdist
-from sklearn.metrics import confusion_matrix
-from sklearn.cluster import KMeans
 import scipy.stats as stats
 from torch.optim.lr_scheduler import StepLR
-from mmd import mmd_rbf
-from a_distance import calculate_a_distance
 from scipy.io import loadmat
+from utils import LogME,SC_cal,LEEP,calculate_a_distance,mmd_rbf,hsic_gam
 
-from transfer_metrics import LogME,NCE,LEEP,NCE_ours_addpz
 logme = LogME(regression=False)
 
 
@@ -72,12 +58,12 @@ def obtain_label_cpu(all_output, all_label, all_fea, args):
 
 
 
-def snd_principle(all_output, all_label, all_fea,pse_label, args):
+def snd_principle(all_output, all_label, all_fea,struc_pse_label, args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     _, predict = torch.max(all_output, 1)
@@ -179,48 +165,48 @@ def get_reweighted_weights(data,data_no_shuffle,model,epoches=3):
               
 
 
-def ce_pse_principle(all_output, all_label, all_fea, pse_label, args):
+def ce_pse_principle(all_output, all_label, all_fea, struc_pse_label, args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     _, predict = torch.max(all_output, 1)
     pred_acc=torch.sum(predict==all_label)/float(all_output.size()[0])
 
 
-    #pse_label=obtain_label(all_output, all_label, all_fea, args)
-    #pse_label=torch.from_numpy(pse_label).long().cuda()
+    #struc_pse_label=obtain_label(all_output, all_label, all_fea, args)
+    #struc_pse_label=torch.from_numpy(struc_pse_label).long().cuda()
     all_output=all_output.cuda()
     with torch.no_grad():
-        loss=nn.CrossEntropyLoss()(all_output,pse_label)
+        loss=nn.CrossEntropyLoss()(all_output,struc_pse_label)
        
     loss=loss.item()
 
     return loss,pred_acc
 
-def ce_nce_pse_principle(all_output, all_label, all_fea, pse_label, args):
+def ce_nce_pse_principle(all_output, all_label, all_fea, struc_pse_label, args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     _, predict = torch.max(all_output, 1)
     pred_acc=torch.sum(predict==all_label)/float(all_output.size()[0])
 
 
-    #pse_label=obtain_label(all_output, all_label, all_fea, args)
-    #pse_label=torch.from_numpy(pse_label).long()
-    pse_label1=get_one_hot(all_output,pse_label)#np.array(pse_label)
+    #struc_pse_label=obtain_label(all_output, all_label, all_fea, args)
+    #struc_pse_label=torch.from_numpy(struc_pse_label).long()
+    struc_pse_label1=get_one_hot(all_output,struc_pse_label)#np.array(struc_pse_label)
     predict1=get_one_hot(all_output,predict)#np.array(predict)
    
     with torch.no_grad():
-        loss1=nn.CrossEntropyLoss(reduction='none')(all_output,pse_label)
-        loss2=nn.CrossEntropyLoss(reduction='none')(predict1,pse_label1)#+0.001
+        loss1=nn.CrossEntropyLoss(reduction='none')(all_output,struc_pse_label)
+        loss2=nn.CrossEntropyLoss(reduction='none')(predict1,struc_pse_label1)#+0.001
 
         loss=torch.sum(loss2)/(predict1.shape[0])
     loss=loss.item()
@@ -232,35 +218,35 @@ def get_one_hot(inputs,targets):
     targets = torch.zeros(log_probs.size()).scatter_(1, targets.unsqueeze(1).long(), 1)
     return targets
 
-def KL_pse_principle(all_output, all_label, all_fea, pse_label, args):
+def KL_pse_principle(all_output, all_label, all_fea, struc_pse_label, args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     _, predict = torch.max(all_output, 1)
     pred_acc=torch.sum(predict==all_label)/float(all_output.size()[0])
 
     
-    #pse_label=obtain_label(all_output, all_label, all_fea, args)
-    #pse_label=torch.from_numpy(pse_label)
-    pse_label=get_one_hot(all_output,pse_label)
+    #struc_pse_label=obtain_label(all_output, all_label, all_fea, args)
+    #struc_pse_label=torch.from_numpy(struc_pse_label)
+    struc_pse_label=get_one_hot(all_output,struc_pse_label)
     all_output=nn.Softmax(dim=1)(all_output)
     with torch.no_grad():
-        loss=nn.KLDivLoss()(all_output.log(),pse_label)
+        loss=nn.KLDivLoss()(all_output.log(),struc_pse_label)
        
     loss=loss.item()
 
     return loss,pred_acc
 
-def LogME_true_principle(all_output, all_label, all_fea, pse_label, args):
+def LogME_true_principle(all_output, all_label, all_fea, struc_pse_label, args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
  
@@ -280,12 +266,12 @@ def LogME_true_principle(all_output, all_label, all_fea, pse_label, args):
     return loss,pred_acc
 
 
-def LogME_pse_principle(all_output, all_label, all_fea, pse_label, args):
+def LogME_pse_principle(all_output, all_label, all_fea, struc_pse_label, args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     logme = LogME(regression=False)
@@ -297,41 +283,41 @@ def LogME_pse_principle(all_output, all_label, all_fea, pse_label, args):
     pred_acc=torch.sum(predict==all_label)/float(all_output.size()[0])
 
     
-    #pse_label=obtain_label(all_output, all_label, all_fea, args)
-    #pse_label=torch.from_numpy(pse_label)
-    #pse_label=get_one_hot(all_output,pse_label)
+    #struc_pse_label=obtain_label(all_output, all_label, all_fea, args)
+    #struc_pse_label=torch.from_numpy(struc_pse_label)
+    #struc_pse_label=get_one_hot(all_output,struc_pse_label)
     all_output=nn.Softmax(dim=1)(all_output)
     #with torch.no_grad():
     all_fea=np.array(all_fea)
-    pse_label=np.array(pse_label)
-    loss=logme.fit(all_fea,pse_label)
+    struc_pse_label=np.array(struc_pse_label)
+    loss=logme.fit(all_fea,struc_pse_label)
     #print(loss)
     #loss=loss.item()
 
     return loss,pred_acc
 
 
-def Leep_pse_principle(all_output, all_label, all_fea, pse_label, args):
+def Leep_pse_principle(all_output, all_label, all_fea, struc_pse_label, args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     _, predict = torch.max(all_output, 1)
     pred_acc=torch.sum(predict==all_label)/float(all_output.size()[0])
 
     
-    #pse_label=obtain_label(all_output, all_label, all_fea, args)
-    #pse_label=torch.from_numpy(pse_label)
-    #pse_label=get_one_hot(all_output,pse_label)
+    #struc_pse_label=obtain_label(all_output, all_label, all_fea, args)
+    #struc_pse_label=torch.from_numpy(struc_pse_label)
+    #struc_pse_label=get_one_hot(all_output,struc_pse_label)
     all_output=nn.Softmax(dim=1)(all_output)
     #with torch.no_grad():
     all_output=np.array(all_output)
-    pse_label=np.array(pse_label)
+    struc_pse_label=np.array(struc_pse_label)
     
-    loss=LEEP(all_output,pse_label)
+    loss=LEEP(all_output,struc_pse_label)
     #print(loss)
     #loss=loss.item()
 
@@ -339,27 +325,27 @@ def Leep_pse_principle(all_output, all_label, all_fea, pse_label, args):
 
 
 
-def NCE_pse_principle(all_output, all_label, all_fea, pse_label, args):
+def NCE_pse_principle(all_output, all_label, all_fea, struc_pse_label, args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     _, predict = torch.max(all_output, 1)
     pred_acc=torch.sum(predict==all_label)/float(all_output.size()[0])
 
     
-    #pse_label=obtain_label(all_output, all_label, all_fea, args)
-    pse_label=torch.from_numpy(pse_label)
-    #pse_label=get_one_hot(all_output,pse_label)
+    #struc_pse_label=obtain_label(all_output, all_label, all_fea, args)
+    struc_pse_label=torch.from_numpy(struc_pse_label)
+    #struc_pse_label=get_one_hot(all_output,struc_pse_label)
     all_output=nn.Softmax(dim=1)(all_output)
     #with torch.no_grad():
     all_output=np.array(all_output)
-    pse_label=np.array(pse_label)
+    struc_pse_label=np.array(struc_pse_label)
     predict=np.array(predict)
-    loss=NCE(predict,pse_label)
+    loss=SC(predict,struc_pse_label)
     #print(loss)
     #loss=loss.item()
 
@@ -373,12 +359,12 @@ def entropy_loss(p):
     loss = torch.sum(entropy, dim=1)
     return loss
 
-def entropy_principle(all_output, all_label, all_fea,pse_label, args):
+def entropy_principle(all_output, all_label, all_fea,struc_pse_label, args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     _, predict = torch.max(all_output, 1)
@@ -390,12 +376,12 @@ def entropy_principle(all_output, all_label, all_fea,pse_label, args):
     return loss,pred_acc
 
 
-def MI_principle(all_output, all_label, all_fea,pse_label, args):
+def MI_principle(all_output, all_label, all_fea,struc_pse_label, args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     _, predict = torch.max(all_output, 1)
@@ -412,12 +398,12 @@ def MI_principle(all_output, all_label, all_fea,pse_label, args):
 
 
 
-def MDE_principle(all_output, all_label, all_fea,pse_label, args,T=1):
+def MDE_principle(all_output, all_label, all_fea,struc_pse_label, args,T=1):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     _, predict = torch.max(all_output, 1)
@@ -435,34 +421,34 @@ def MDE_principle(all_output, all_label, all_fea,pse_label, args,T=1):
 
 
 
-def ce_principle(all_output, all_label, all_fea, pse_label,args):
+def ce_principle(all_output, all_label, all_fea, struc_pse_label,args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     _, predict = torch.max(all_output, 1)
     pred_acc=torch.sum(predict==all_label)/float(all_output.size()[0])
 
 
-    pse_label=predict
+    struc_pse_label=predict
     all_output = all_output.cuda()
-    pse_label = pse_label.cuda()
+    struc_pse_label = struc_pse_label.cuda()
     with torch.no_grad():
-        loss=nn.CrossEntropyLoss()(all_output,pse_label)
+        loss=nn.CrossEntropyLoss()(all_output,struc_pse_label)
      
     loss=loss.item()
 
     return loss,pred_acc
 
-def Leep_true_principle(all_output, all_label, all_fea, pse_label,args):
+def Leep_true_principle(all_output, all_label, all_fea, struc_pse_label,args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     _, predict = torch.max(all_output, 1)
@@ -470,7 +456,7 @@ def Leep_true_principle(all_output, all_label, all_fea, pse_label,args):
 
     
    
-    #pse_label=get_one_hot(all_output,pse_label)
+    #struc_pse_label=get_one_hot(all_output,struc_pse_label)
     all_output=nn.Softmax(dim=1)(all_output)
     #with torch.no_grad():
     all_output=np.array(all_output)
@@ -512,34 +498,34 @@ def MI2(pred):
 
 
 
-def SUTE_principle(all_output, all_label, all_fea, pse_label,args):
+def SUTE_principle(all_output, all_label, all_fea, struc_pse_label,args):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
     except:
         pass
     _, predict = torch.max(all_output, 1)
     pred=nn.Softmax(dim=1)(all_output)
    
-    entropy_loss,diversity_loss =  MI2(pred)
+    entropy_loss,GD =  MI2(pred)
 
     pred_acc=torch.sum(predict==all_label)/float(all_output.size()[0])
 
     
 
     #pdb.set_trace()
-    #pse_label1=get_one_hot(all_output,pse_label)#np.array(pse_label)
+    #struc_pse_label1=get_one_hot(all_output,struc_pse_label)#np.array(struc_pse_label)
     all_label=np.array(all_label)
-    pse_label=np.array(pse_label)
+    struc_pse_label=np.array(struc_pse_label)
     predict=np.array(predict)
 
    
-    nce=NCE(predict,pse_label)#+0.1*entropy_pse.item()#(torch.mean(Entropy(pse_label1))).item()
-    nentropy_loss=-entropy_loss
+    SC=SC_cal(predict,struc_pse_label)#+0.1*entropy_pse.item()#(torch.mean(Entropy(struc_pse_label1))).item()
+    IC=-entropy_loss
     #loss=loss2-0.1*entropy_loss#loss1#loss2-0.2*loss1#;loss2#-loss1
-    return nce,nentropy_loss,diversity_loss,pred_acc
+    return SC,IC,GD,pred_acc
 def calculate_entropy(n, c):
     # 计算每个值的概率
     probability = 1 / c
@@ -573,13 +559,13 @@ def load_mat(file):
 
 
 
-def mmd_principle(all_output, all_label, all_fea, pse_label,args,feature_source):
+def mmd_principle(all_output, all_label, all_fea, struc_pse_label,args,feature_source):
     #pdb.set_trace()
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
         feature_source=torch.from_numpy(feature_source)
     except:
         pass
@@ -599,12 +585,12 @@ def mmd_principle(all_output, all_label, all_fea, pse_label,args,feature_source)
     mmd=-mmd
     return mmd,pred_acc
 
-def A_distance_principle(all_output, all_label, all_fea, pse_label,args,feature_source):
+def A_distance_principle(all_output, all_label, all_fea, struc_pse_label,args,feature_source):
     try:
         all_output=torch.from_numpy(all_output)
         all_label=torch.from_numpy(all_label)
         all_fea=torch.from_numpy(all_fea)
-        pse_label=torch.from_numpy(pse_label).long()
+        struc_pse_label=torch.from_numpy(struc_pse_label).long()
         feature_source=torch.from_numpy(feature_source).long()
     except:
         pass
@@ -647,19 +633,19 @@ def transfer_calcualte_for_a_model(method,output,label,feature,pse,args,feature_
         transfer_ability,pred_acc=A_distance_principle(output,label,feature,pse,args,feature_source)
    
     elif method=='SUTE':
-        nce,nentropy_loss,diversity_loss,pred_acc=SUTE_principle(output,label,feature,pse,args)
+        SC,IC,GD,pred_acc=SUTE_principle(output,label,feature,pse,args)
 
-        #print(nce,nentropy_loss,diversity_loss)
+        #print(SC,IC,GD)
         tau_h=2/3#int(args.class_num/3*2)
         tau_l=1/2#int(args.class_num/2)
-        if diversity_loss>calculate_entropy(args.class_num,args.class_num)*tau_h:#calculate_entropy(tau_h,tau_h):
-            diversity_loss=calculate_entropy(args.class_num,args.class_num)*tau_h
+        if GD>calculate_entropy(args.class_num,args.class_num)*tau_h:#calculate_entropy(tau_h,tau_h):
+            GD=calculate_entropy(args.class_num,args.class_num)*tau_h
 
-        transfer_ability=10*nce+0.1*nentropy_loss+1*diversity_loss
-        if diversity_loss<calculate_entropy(args.class_num,args.class_num)*tau_l:
-            diversity_loss=-float('inf')
+        transfer_ability=10*SC+0.1*IC+1*GD
+        if GD<calculate_entropy(args.class_num,args.class_num)*tau_l:
+            GD=-float('inf')
             transfer_ability=-float('inf')
-        if nce>-1e-10:
+        if SC>-1e-10:
             transfer_ability=-float('inf')
     try:
         pred_acc=pred_acc.item()
@@ -897,7 +883,7 @@ def sort_lists_by_div(model_names, div_metrics,div_tran):
 
 
 
-from hsic import hsic_gam
+
 def cal_div(feature_path,model_set,model):
     div=0
     
