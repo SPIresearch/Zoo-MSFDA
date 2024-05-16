@@ -1,17 +1,9 @@
-
-
-import numpy as np
 import torch
 import torch.nn as nn
-from torch.distributions.normal import Normal
-from torchvision import models
-
-import torch.nn.utils.weight_norm as weightNorm
-
+import numpy as np
 import torch.nn.functional as F
 from loss_function import *
 
-from loss_function import ce_loss,KL,entropy_loss,total_entropy_loss,CrossEntropy1
 def calc_coeff(iter_num, high=1.0, low=0.0, alpha=10.0, max_iter=10000.0):
     return np.float(2.0 * (high - low) / (1.0 + np.exp(-alpha*iter_num / max_iter)) - (high - low) + low)
 
