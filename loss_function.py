@@ -1,11 +1,9 @@
-from stringprep import c22_specials
+
 import numpy as np
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
-import math
 import torch.nn.functional as F
-import pdb
+
 
 class CrossEntropy1(nn.Module):
     """Cross entropy loss with label smoothing regularizer.
