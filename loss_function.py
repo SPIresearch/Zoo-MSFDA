@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 3b137b1 (Initial commit)
 import numpy as np
 import torch
 import torch.nn as nn
@@ -22,7 +25,11 @@ class CrossEntropy1(nn.Module):
         self.use_gpu = use_gpu
         self.reduction = reduction
         self.logsoftmax = nn.LogSoftmax(dim=1)
+<<<<<<< HEAD
         
+=======
+
+>>>>>>> 3b137b1 (Initial commit)
     def forward(self, inputs, targets):
         """
         Args:
@@ -30,14 +37,23 @@ class CrossEntropy1(nn.Module):
             targets: ground truth labels with shape (num_classes)
         """
         log_probs = self.logsoftmax(inputs)
+<<<<<<< HEAD
         #targets = torch.zeros(log_probs.size()).scatter_(1, targets.unsqueeze(1).cpu(), 1)
         if self.use_gpu: targets = targets.cuda()
         #targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
         loss = (- targets * log_probs).sum(dim=1)
+=======
+        # targets = torch.zeros(log_probs.size()).scatter_(1, targets.unsqueeze(1).cpu(), 1)
+        if self.use_gpu:
+            targets = targets.cuda()
+        # targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
+        loss = (-targets * log_probs).sum(dim=1)
+>>>>>>> 3b137b1 (Initial commit)
         if self.reduction:
             return loss.mean()
         else:
             return loss
+<<<<<<< HEAD
         return loss
 
 
@@ -310,11 +326,17 @@ def total_entropy_loss1( alpha,c):
     loss=torch.mean(loss) 
     return loss
 
+=======
+        
+
+
+>>>>>>> 3b137b1 (Initial commit)
 def Entropy(input_):
     bs = input_.size(0)
     epsilon = 1e-5
     entropy = -input_ * torch.log(input_ + epsilon)
     entropy = torch.sum(entropy, dim=1)
+<<<<<<< HEAD
     return entropy 
 
 def KLConsistencyLoss(output, pred_label, args, temperature=2):
@@ -358,6 +380,9 @@ def KLConsistencyLoss(output, pred_label, args, temperature=2):
 
     return KL_loss
 
+=======
+    return entropy
+>>>>>>> 3b137b1 (Initial commit)
 
 
 class CrossEntropyLabelSmooth(nn.Module):
@@ -385,14 +410,25 @@ class CrossEntropyLabelSmooth(nn.Module):
             targets: ground truth labels with shape (num_classes)
         """
         log_probs = self.logsoftmax(inputs)
+<<<<<<< HEAD
         targets = torch.zeros(log_probs.size()).scatter_(1, targets.unsqueeze(1).cpu(), 1)
         if self.use_gpu: targets = targets.cuda()
         targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
         loss = (- targets * log_probs).sum(dim=1)
+=======
+        targets = torch.zeros(log_probs.size()).scatter_(
+            1, targets.unsqueeze(1).cpu(), 1
+        )
+        if self.use_gpu:
+            targets = targets.cuda()
+        targets = (1 - self.epsilon) * targets + self.epsilon / self.num_classes
+        loss = (-targets * log_probs).sum(dim=1)
+>>>>>>> 3b137b1 (Initial commit)
         if self.reduction:
             return loss.mean()
         else:
             return loss
+<<<<<<< HEAD
         return loss
 
 
@@ -412,3 +448,6 @@ class softCrossEntropy(nn.Module):
         loss = torch.sum(torch.mul(log_likelihood, target))/sample_num
 
         return loss
+=======
+        
+>>>>>>> 3b137b1 (Initial commit)
