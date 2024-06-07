@@ -1,37 +1,4 @@
 import argparse
-<<<<<<< HEAD
-import os
-import os.path as osp
-import numpy as np
-import torch
-
-import scipy.io
-import torch.nn as nn
-import torch.optim as optim
-from torchvision import transforms
-import network, loss_function
-from torch.utils.data import DataLoader
-from data_list import ImageList
-import random, pdb, math, copy
-from loss_function import CrossEntropyLabelSmooth
-from scipy.spatial.distance import cdist
-
-def op_copy(optimizer):
-    for param_group in optimizer.param_groups:
-        param_group['lr0'] = param_group['lr']
-    return optimizer
-
-
-
-
-def lr_scheduler(optimizer, iter_num, max_iter, gamma=10, power=0.75):
-    decay = (1 + gamma * iter_num / max_iter) ** (-power)
-    for param_group in optimizer.param_groups:
-        param_group['lr'] = param_group['lr0'] * decay
-        param_group['weight_decay'] = 1e-3
-        param_group['momentum'] = 0.9
-        param_group['nesterov'] = True
-=======
 import copy
 import math
 import os
@@ -67,49 +34,10 @@ def lr_scheduler(optimizer, iter_num, max_iter, gamma=10, power=0.75):
         param_group["weight_decay"] = 1e-3
         param_group["momentum"] = 0.9
         param_group["nesterov"] = True
->>>>>>> 3b137b1 (Initial commit)
     return optimizer
 
 
 def image_train(resize_size=384, crop_size=384):
-<<<<<<< HEAD
- 
-  normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                   std=[0.229, 0.224, 0.225])
-
-  return  transforms.Compose([
-        transforms.Resize((resize_size, resize_size)),
-        transforms.RandomCrop(crop_size),
-        transforms.RandomHorizontalFlip(),
-        transforms.ToTensor(),
-        normalize
-    ])
-
-def image_test(resize_size=384, crop_size=384):
-
-  normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                   std=[0.229, 0.224, 0.225])
- 
-  return  transforms.Compose([
-        transforms.Resize((resize_size, resize_size)),
-        transforms.CenterCrop(crop_size),
-        transforms.ToTensor(),
-        normalize
-    ])
-
-
-def model_forward(netF,netC,X, y):
-    if args.fix:
-        with torch.no_grad(): 
-            fea=netF(X)
-    else:
-        fea=netF(X)
-    output=netC(fea)
-    
-   
-    losses=CrossEntropyLabelSmooth(num_classes=args.class_num, epsilon=args.smooth)(output, y) 
-   
-=======
 
     normalize = transforms.Normalize(
         mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
@@ -142,7 +70,7 @@ def image_test(resize_size=384, crop_size=384):
     )
 
 
-def model_forward(netF, netC, X, y):
+def model_forward(args, netF, netC, X, y):
     if args.fix:
         with torch.no_grad():
             fea = netF(X)
@@ -154,31 +82,11 @@ def model_forward(netF, netC, X, y):
         output, y
     )
 
->>>>>>> 3b137b1 (Initial commit)
     return losses
 
 
 def get_classes(image_list):
     if len(image_list[0].split()) > 2:
-<<<<<<< HEAD
-        images = [(val.split()[0], np.array([int(la) for la in val.split()[1:]])) for val in image_list]
-    else:
-        images = [(val.split()[0], int(val.split()[1])) for val in image_list]
-    image_list= images 
-    class_dict1={}
-    
-    for index in range(len(image_list)):
-        path, target = image_list[index]
-        classes=path.split('/')[-2]
-        if target not in class_dict1.keys():
-            class_dict1[target]=classes
-        # if classes not in class_dict2.keys():
-        #     class_dict2[classes]=target
-    classes_list=[class_dict1[i] for i in range(len(list(class_dict1.keys())))]
-    return classes_list
-
-def data_load(args): 
-=======
         images = [
             (val.split()[0], np.array([int(la) for la in val.split()[1:]]))
             for val in image_list
@@ -193,15 +101,13 @@ def data_load(args):
         classes = path.split("/")[-2]
         if target not in class_dict1.keys():
             class_dict1[target] = classes
-        # if classes not in class_dict2.keys():
-        #     class_dict2[classes]=target
+
     classes_list = [class_dict1[i] for i in range(len(list(class_dict1.keys())))]
     return classes_list
 
 
 def data_load(args):
->>>>>>> 3b137b1 (Initial commit)
-    ## prepare data
+
     dsets = {}
     dset_loaders = {}
     train_bs = args.batch_size
@@ -210,30 +116,8 @@ def data_load(args):
 
     if args.trte == "val":
         dsize = len(txt_src)
-<<<<<<< HEAD
-        tr_size = int(0.9*dsize)
-        # print(dsize, tr_size, dsize - tr_size)
-        tr_txt, te_txt = torch.utils.data.random_split(txt_src, [tr_size, dsize - tr_size])
-    else:
-        dsize = len(txt_src)
-        tr_size = int(0.9*dsize)
-        _, te_txt = torch.utils.data.random_split(txt_src, [tr_size, dsize - tr_size])
-        tr_txt = txt_src
-
-    class_list=get_classes(txt_test)
-    #pdb.set_trace()
-    dsets["source_tr"] = ImageList(tr_txt, transform=image_train(args.resize_size,args.crop_size),class_list=class_list)
-    dset_loaders["source_tr"] = DataLoader(dsets["source_tr"], batch_size=train_bs, shuffle=True, num_workers=args.worker, drop_last=False)
-    dsets["source_te"] = ImageList(te_txt, transform=image_test(args.resize_size,args.crop_size),class_list=class_list)
-    dset_loaders["source_te"] = DataLoader(dsets["source_te"], batch_size=train_bs, shuffle=True, num_workers=args.worker, drop_last=False)
-    dsets["test"] = ImageList(txt_test, transform=image_test(args.resize_size,args.crop_size),class_list=class_list)
-    dset_loaders["test"] = DataLoader(dsets["test"], batch_size=train_bs, shuffle=False, num_workers=args.worker, drop_last=False)
-   
-    return dset_loaders
-    
-=======
         tr_size = int(0.9 * dsize)
-        # print(dsize, tr_size, dsize - tr_size)
+
         tr_txt, te_txt = torch.utils.data.random_split(
             txt_src, [tr_size, dsize - tr_size]
         )
@@ -244,7 +128,7 @@ def data_load(args):
         tr_txt = txt_src
 
     class_list = get_classes(txt_test)
-    # pdb.set_trace()
+
     dsets["source_tr"] = ImageList(
         tr_txt,
         transform=image_train(args.resize_size, args.crop_size),
@@ -285,7 +169,6 @@ def data_load(args):
     return dset_loaders
 
 
->>>>>>> 3b137b1 (Initial commit)
 def cal_acc(loader, netF, netC, flag=False):
     start_test = True
     with torch.no_grad():
@@ -296,11 +179,7 @@ def cal_acc(loader, netF, netC, flag=False):
             labels = data[1]
             inputs = inputs.cuda()
             outputs = netF(inputs)
-<<<<<<< HEAD
-            outputs = netC(outputs)#simple_transform(outputs,1.3))
-=======
-            outputs = netC(outputs)  # simple_transform(outputs,1.3))
->>>>>>> 3b137b1 (Initial commit)
+            outputs = netC(outputs)
             if start_test:
                 all_output = outputs.float().cpu()
                 all_label = labels.float()
@@ -311,14 +190,6 @@ def cal_acc(loader, netF, netC, flag=False):
 
     all_output = nn.Softmax(dim=1)(all_output)
     _, predict = torch.max(all_output, 1)
-<<<<<<< HEAD
-    accuracy = torch.sum(torch.squeeze(predict).float() == all_label).item() / float(all_label.size()[0])
-    mean_ent = torch.mean(loss_function.Entropy(all_output)).cpu().data.item()
-   
-    
-    return accuracy*100, mean_ent
-    
-=======
     accuracy = torch.sum(torch.squeeze(predict).float() == all_label).item() / float(
         all_label.size()[0]
     )
@@ -326,25 +197,14 @@ def cal_acc(loader, netF, netC, flag=False):
 
     return accuracy * 100, mean_ent
 
->>>>>>> 3b137b1 (Initial commit)
 
-# Follow SHOT
 def calculate_structure_semantics(all_output, all_label, all_fea, args):
 
-<<<<<<< HEAD
-
-    all_output = nn.Softmax(dim=1)(all_output)
-    ent = torch.sum(-all_output * torch.log(all_output + args.epsilon), dim=1)
-   
-    _, predict = torch.max(all_output, 1)
-   
-=======
     all_output = nn.Softmax(dim=1)(all_output)
     ent = torch.sum(-all_output * torch.log(all_output + args.epsilon), dim=1)
 
     _, predict = torch.max(all_output, 1)
 
->>>>>>> 3b137b1 (Initial commit)
     all_fea = torch.cat((all_fea, torch.ones(all_fea.size(0), 1)), 1)
     all_fea = (all_fea.t() / torch.norm(all_fea, p=2, dim=1)).t()
 
@@ -352,50 +212,18 @@ def calculate_structure_semantics(all_output, all_label, all_fea, args):
     K = all_output.size(1)
     aff = all_output.float().cpu().numpy()
     initc = aff.transpose().dot(all_fea)
-<<<<<<< HEAD
-    initc = initc / (1e-8 + aff.sum(axis=0)[:,None])
-    cls_count = np.eye(K)[predict].sum(axis=0)
-    labelset = np.where(cls_count>0)
-    labelset = labelset[0]
-  
-
-    dd = cdist(all_fea, initc[labelset], 'cosine')
-=======
     initc = initc / (1e-8 + aff.sum(axis=0)[:, None])
     cls_count = np.eye(K)[predict].sum(axis=0)
     labelset = np.where(cls_count > 0)
     labelset = labelset[0]
 
     dd = cdist(all_fea, initc[labelset], "cosine")
->>>>>>> 3b137b1 (Initial commit)
     pred_struc_label = dd.argmin(axis=1)
     pred_struc_label = labelset[pred_struc_label]
 
     for round in range(1):
         aff = np.eye(K)[pred_struc_label]
         initc = aff.transpose().dot(all_fea)
-<<<<<<< HEAD
-        initc = initc / (1e-8 + aff.sum(axis=0)[:,None])
-        dd = cdist(all_fea, initc[labelset],  'cosine')
-        pred_struc_label = dd.argmin(axis=1)
-        pred_struc_label = labelset[pred_struc_label]
-
-    return pred_struc_label.astype('int')
-
-
-def obtain_pse_label_struc(all_output, all_label, all_fea, args,tau=0.5):
-    #all_output=torch.from_numpy(all_output)
-    #all_label=torch.from_numpy(all_label)
-    #all_fea=torch.from_numpy(all_fea)
-    _, predict = torch.max(all_output, 1)
-
-    pse_label_struc=calculate_structure_semantics(all_output, all_label, all_fea, args)
-
-
-    return pse_label_struc
-
-def cal_acc_test(loader, netF, netC, feature_save_dir='./features', flag=False):
-=======
         initc = initc / (1e-8 + aff.sum(axis=0)[:, None])
         dd = cdist(all_fea, initc[labelset], "cosine")
         pred_struc_label = dd.argmin(axis=1)
@@ -405,9 +233,7 @@ def cal_acc_test(loader, netF, netC, feature_save_dir='./features', flag=False):
 
 
 def obtain_pse_label_struc(all_output, all_label, all_fea, args, tau=0.5):
-    # all_output=torch.from_numpy(all_output)
-    # all_label=torch.from_numpy(all_label)
-    # all_fea=torch.from_numpy(all_fea)
+
     _, predict = torch.max(all_output, 1)
 
     pse_label_struc = calculate_structure_semantics(
@@ -418,7 +244,6 @@ def obtain_pse_label_struc(all_output, all_label, all_fea, args, tau=0.5):
 
 
 def cal_acc_test(loader, netF, netC, feature_save_dir="./features", flag=False):
->>>>>>> 3b137b1 (Initial commit)
     start_test = True
     with torch.no_grad():
         iter_test = iter(loader)
@@ -428,11 +253,7 @@ def cal_acc_test(loader, netF, netC, feature_save_dir="./features", flag=False):
             labels = data[1]
             inputs = inputs.cuda()
             features = netF(inputs)
-<<<<<<< HEAD
-            outputs = netC(features)#simple_transform(outputs,1.3))
-=======
-            outputs = netC(features)  # simple_transform(outputs,1.3))
->>>>>>> 3b137b1 (Initial commit)
+            outputs = netC(features)
             if start_test:
                 all_features = features.float().cpu()
                 all_output = outputs.float().cpu()
@@ -445,25 +266,6 @@ def cal_acc_test(loader, netF, netC, feature_save_dir="./features", flag=False):
 
     if not os.path.exists(feature_save_dir):
         os.makedirs(feature_save_dir)
-<<<<<<< HEAD
-    scipy.io.savemat(f'{feature_save_dir}/{args.dset}_{args.net}_{str(args.s)}_{str(args.t)}.mat',{'ft':all_features.numpy(),'output':all_output.numpy(),'label':all_label.numpy()})
-    pse_struc=obtain_pse_label_struc(all_output,all_label,all_features,args)
-    #all_output = nn.Softmax(dim=1)(all_output)
-    _, predict = torch.max(all_output, 1)
-    accuracy = torch.sum(torch.squeeze(predict).float() == all_label).item() / float(all_label.size()[0])
-    return accuracy*100, accuracy
-
-
-        
-def train_source(args,netF,netC):
-    dset_loaders = data_load(args)
-    
-   
-    param_group = []
-    learning_rate = args.lr
-    
-         
-=======
     scipy.io.savemat(
         f"{feature_save_dir}/{args.dset}_{args.net}_{str(args.s)}_{str(args.t)}.mat",
         {
@@ -473,7 +275,7 @@ def train_source(args,netF,netC):
         },
     )
     pse_struc = obtain_pse_label_struc(all_output, all_label, all_features, args)
-    # all_output = nn.Softmax(dim=1)(all_output)
+
     _, predict = torch.max(all_output, 1)
     accuracy = torch.sum(torch.squeeze(predict).float() == all_label).item() / float(
         all_label.size()[0]
@@ -486,30 +288,11 @@ def train_source(args, netF, netC):
 
     param_group = []
     learning_rate = args.lr
->>>>>>> 3b137b1 (Initial commit)
 
     for k, v in netF.named_parameters():
         if args.fix:
             v.requires_grad = False
         else:
-<<<<<<< HEAD
-            param_group += [{'params': v, 'lr': learning_rate*0.1}]
-
-    for k, v in netC.named_parameters():
-
-        param_group += [{'params': v, 'lr': learning_rate}] 
-
-    
-    
-    if args.optimizer=='sgd':
-        optimizer = optim.SGD(param_group)
-    elif args.optimizer=='adamw':
-        optimizer = optim.AdamW(param_group)
-    elif args.optimizer=='adam':
-        optimizer = optim.Adam(param_group)
-    elif  args.optimizer=='asgd':
-        optimizer = optim.ASGD(param_group) 
-=======
             param_group += [{"params": v, "lr": learning_rate * 0.1}]
 
     for k, v in netC.named_parameters():
@@ -524,7 +307,6 @@ def train_source(args, netF, netC):
         optimizer = optim.Adam(param_group)
     elif args.optimizer == "asgd":
         optimizer = optim.ASGD(param_group)
->>>>>>> 3b137b1 (Initial commit)
     optimizer = op_copy(optimizer)
 
     acc_init = 0
@@ -535,17 +317,6 @@ def train_source(args, netF, netC):
         netF.eval()
     else:
         netF.train()
-<<<<<<< HEAD
-        
-    netC.train()
-   
-    while iter_num < max_iter:
-        try:
-            inputs_source, labels_source,text_source =next(iter_source)
-        except:
-            iter_source = iter(dset_loaders["source_tr"])
-            inputs_source, labels_source,text_source = next(iter_source)
-=======
 
     netC.train()
 
@@ -555,53 +326,25 @@ def train_source(args, netF, netC):
         except:
             iter_source = iter(dset_loaders["source_tr"])
             inputs_source, labels_source, text_source = next(iter_source)
->>>>>>> 3b137b1 (Initial commit)
 
         if inputs_source.size(0) == 1:
             continue
 
-<<<<<<< HEAD
-        #print(inputs_source.shape)
-=======
-        # print(inputs_source.shape)
->>>>>>> 3b137b1 (Initial commit)
         iter_num += 1
         lr_scheduler(optimizer, iter_num=iter_num, max_iter=max_iter)
 
         inputs_source, labels_source = inputs_source.cuda(), labels_source.cuda()
-<<<<<<< HEAD
-                   
-     
-        classifier_loss=model_forward(netF,netC,inputs_source,labels_source)
-        
-        optimizer.zero_grad()
-        classifier_loss.backward()
-        
-            
-        optimizer.step()
-        
-=======
 
-        classifier_loss = model_forward(netF, netC, inputs_source, labels_source)
+        classifier_loss = model_forward(args, netF, netC, inputs_source, labels_source)
 
         optimizer.zero_grad()
         classifier_loss.backward()
 
         optimizer.step()
->>>>>>> 3b137b1 (Initial commit)
 
         if iter_num % interval_iter == 0 or iter_num == max_iter:
             netF.eval()
             netC.eval()
-<<<<<<< HEAD
-           
-            acc_s_te, _ = cal_acc(dset_loaders['source_te'], netF, netC,False)
-          
-            log_str = 'Task: {}, Iter:{}/{}; Accuracy = {:.2f}%'.format(args.name_src, iter_num, max_iter, acc_s_te)
-            args.out_file.write(log_str + '\n')
-            args.out_file.flush()
-            print(log_str+'\n')
-=======
 
             acc_s_te, _ = cal_acc(dset_loaders["source_te"], netF, netC, False)
 
@@ -611,42 +354,12 @@ def train_source(args, netF, netC):
             args.out_file.write(log_str + "\n")
             args.out_file.flush()
             print(log_str + "\n")
->>>>>>> 3b137b1 (Initial commit)
             if not args.fix:
                 netF.train()
             netC.train()
             if acc_s_te >= acc_init:
                 acc_init = acc_s_te
                 best_netF = netF.state_dict()
-<<<<<<< HEAD
-               
-                best_netC = netC.state_dict()
-
-            torch.save(best_netF, osp.join(args.output_dir_src, "source_F.pt"))
-   
-            torch.save(best_netC, osp.join(args.output_dir_src, "source_C.pt"))
-   
-    return netF, netC
-def simple_transform(x, beta):
-            x = 1/torch.pow(torch.log(1/x+1),beta)
-            return x
-def test_target(args,netF,netC):
-    dset_loaders = data_load(args)
-    
-    args.modelpath = args.output_dir_src + '/source_F.pt'   
-    netF.load_state_dict(torch.load(args.modelpath))
-   
-    args.modelpath = args.output_dir_src + '/source_C.pt'   
-    netC.load_state_dict(torch.load(args.modelpath))
-    netF.eval()
-  
-    netC.eval()
-
-  
-    acc, _ = cal_acc_test(dset_loaders['test'], netF, netC,args.feature_save_dir,False)
-    
-    log_str = '\nTraining: {}, Task: {}, Accuracy = {:.2f}%'.format(args.trte, args.name, acc)
-=======
 
                 best_netC = netC.state_dict()
 
@@ -681,16 +394,12 @@ def test_target(args, netF, netC):
     log_str = "\nTraining: {}, Task: {}, Accuracy = {:.2f}%".format(
         args.trte, args.name, acc
     )
->>>>>>> 3b137b1 (Initial commit)
 
     args.out_file.write(log_str)
     args.out_file.flush()
     print(log_str)
 
-<<<<<<< HEAD
-=======
 
->>>>>>> 3b137b1 (Initial commit)
 def print_args(args):
     s = "==========================================\n"
     for arg, content in args.__dict__.items():
@@ -698,101 +407,6 @@ def print_args(args):
     return s
 
 
-<<<<<<< HEAD
-
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='CAiDA')
-    parser.add_argument('--gpu_id', type=str, nargs='?', default='3', help="device id to run")
-    parser.add_argument('--s', type=int, default=0, help="source")
-    parser.add_argument('--t', type=int, default=1, help="target")
-    parser.add_argument('--max_epoch', type=int, default=50, help="max iterations")
-    parser.add_argument('--batch_size', type=int, default=128, help="batch_size")
-    parser.add_argument('--worker', type=int, default=4, help="number of workers")
-    parser.add_argument('--dset', type=str, default='office-home', choices=['office31', 'office-home', 'domainnet'])
-    parser.add_argument('--lr', type=float, default=1e-3, help="learning rate")
-    parser.add_argument('--net', type=str, default='vit_l_16')
-    parser.add_argument('--seed', type=int, default=2024, help="random seed")
-    parser.add_argument('--bottleneck', type=int, default=256)
-    parser.add_argument('--epsilon', type=float, default=1e-5)
-    parser.add_argument('--layer', type=str, default="wn", choices=["linear", "wn"])
-    parser.add_argument('--smooth', type=float, default=0.1)
-    parser.add_argument('--pth_save_dir', type=str, default='./source/')
-    parser.add_argument('--trte', type=str, default='val', choices=['full', 'val'])
-    parser.add_argument('--fix', type=bool, default=False)
-    parser.add_argument('--feature_save_dir', type=str, default='./features')
-    parser.add_argument('--data_folder', type=str, default='./data/')
-    parser.add_argument('--optimizer', type=str, default='sgd')
-    args = parser.parse_args()
-
-    if args.dset == 'office-home':
-        names = ['Art', 'Clipart', 'Product', 'Real_World']
-        args.class_num = 65 
-    if args.dset == 'office31':
-        names = ['amazon', 'dslr', 'webcam']
-        args.class_num = 31
-    if args.dset == 'office-caltech':
-        names = ['amazon', 'caltech', 'dslr', 'webcam']
-        args.class_num = 10
-    if args.dset == 'domainnet':
-        names = ['real', 'infograph', 'painting', 'sketch','clipart','quickdraw']
-        args.class_num = 345
-    def initialize(args):
-        resize_size=256
-        crop_size=224
-       
-        if args.net == 'vit_l_16':
-            netF = network.VitBase(res_name=args.net).cuda()
-        elif args.net == 'vit_b_16':
-            netF = network.VitBase(res_name=args.net).cuda()
-        elif args.net == 'vit_b_32':
-            netF = network.VitBase(res_name=args.net).cuda()
-        elif args.net == 'vit_h_14':
-            netF = network.VitBase(res_name=args.net).cuda()    
-            resize_size=518
-            crop_size=518
-        elif args.net == 'vit_l_32':
-            netF = network.VitBase(res_name=args.net).cuda()
-        elif args.net == 'swin_t':
-          
-            netF = network.SwinBase(res_name=args.net).cuda()
-        elif args.net == 'swin_l':
-            netF = network.SwinBase(res_name=args.net).cuda()
-        elif args.net == 'swin_b':
-            netF = network.SwinBase(res_name=args.net).cuda()   
-        elif args.net == 'swin_s':
-            netF = network.SwinBase(res_name=args.net).cuda()
-        elif args.net == 'swin_v2_t':
-            netF = network.SwinBase(res_name=args.net).cuda()   
-        elif args.net == 'swin_v2_s':
-            netF = network.SwinBase(res_name=args.net).cuda()
-        elif args.net == 'swin_v2_b':
-            netF = network.SwinBase(res_name=args.net).cuda()        
-        elif args.net == 'resnet50':
-            netF = network.ResBase(res_name="resnet50").cuda() 
-        #using pretrained weights of Imagenet_V1 
-        elif args.net == 'resnet50_v1':
-            netF = network.ResBase(res_name="resnet50_v1").cuda()  
-        #without using pretrained weights
-        elif args.net == 'resnet50_nopre':
-            netF = network.ResBase(res_name="resnet50_nopre").cuda()  
-        elif args.net == 'resnet101':
-            netF = network.ResBase(res_name="resnet101").cuda()  
-        elif args.net == 'efficientnet_v2_s':
-        
-            netF = network.EffBase(res_name="efficientnet_v2_s").cuda()
-        elif args.net == 'efficientnet_v2_m':
-            netF = network.EffBase(res_name="efficientnet_v2_m").cuda() 
-        elif args.net == 'efficientnet_v2_l':
-            netF = network.EffBase(res_name="efficientnet_v2_l").cuda()           
-       
-        netC = network.feat_classifier(type=args.layer, feature_dim=netF.in_features, class_num = args.class_num, bottleneck_dim=args.bottleneck).cuda()
-        return netF,netC,resize_size,crop_size
-
-    os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
-    SEED = args.seed
-    
-=======
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="CAiDA")
     parser.add_argument(
@@ -870,10 +484,10 @@ if __name__ == "__main__":
             netF = network.SwinBase(res_name=args.net).cuda()
         elif args.net == "resnet50":
             netF = network.ResBase(res_name="resnet50").cuda()
-        # using pretrained weights of Imagenet_V1
+
         elif args.net == "resnet50_v1":
             netF = network.ResBase(res_name="resnet50_v1").cuda()
-        # without using pretrained weights
+
         elif args.net == "resnet50_nopre":
             netF = network.ResBase(res_name="resnet50_nopre").cuda()
         elif args.net == "resnet101":
@@ -897,38 +511,13 @@ if __name__ == "__main__":
     os.environ["CUDA_VISIBLE_DEVICES"] = args.gpu_id
     SEED = args.seed
 
->>>>>>> 3b137b1 (Initial commit)
     torch.manual_seed(SEED)
     torch.cuda.manual_seed(SEED)
     np.random.seed(SEED)
     random.seed(SEED)
     oripath = args.pth_save_dir
-    # torch.backends.cudnn.deterministic = True
+
     for k in range(len(names)):
-<<<<<<< HEAD
-        args.s=k
-        netF,netC,args.resize_size,args.crop_size=initialize(args)
-        folder = args.data_folder
-        args.s_dset_path = folder + args.dset + '/' + names[args.s] + '_list.txt'
-        args.test_dset_path = folder + args.dset + '/' + names[args.t] + '_list.txt'   
-
-        args.pth_save_dir=oripath+'_'+args.net
-
-        args.output_dir_src = osp.join(args.pth_save_dir, args.dset, names[args.s][0].upper())
-        args.name_src = names[args.s][0].upper()
-        if not osp.exists(args.output_dir_src):
-            os.system('mkdir -p ' + args.output_dir_src)
-        if not osp.exists(args.output_dir_src):
-            os.mkdir(args.output_dir_src)
-
-        args.out_file = open(osp.join(args.output_dir_src, 'log.txt'), 'w')
-        args.out_file.write(print_args(args)+'\n')
-        args.out_file.flush()
-        
-        train_source(args,netF,netC)
-        
-        args.out_file = open(osp.join(args.output_dir_src, 'log_test_transform.txt'), 'w')
-=======
         args.s = k
         netF, netC, args.resize_size, args.crop_size = initialize(args)
         folder = args.data_folder
@@ -955,21 +544,12 @@ if __name__ == "__main__":
         args.out_file = open(
             osp.join(args.output_dir_src, "log_test_transform.txt"), "w"
         )
->>>>>>> 3b137b1 (Initial commit)
         for i in range(len(names)):
             if i == args.s:
                 continue
             args.t = i
-<<<<<<< HEAD
-            args.name = names[args.s][0].upper() + names[args.t][0].upper()          
-            args.s_dset_path = folder + args.dset + '/' + names[args.s] + '_list.txt'
-            args.test_dset_path = folder + args.dset + '/' + names[args.t] + '_list.txt'
-
-            test_target(args,netF,netC)
-=======
             args.name = names[args.s][0].upper() + names[args.t][0].upper()
             args.s_dset_path = folder + args.dset + "/" + names[args.s] + "_list.txt"
             args.test_dset_path = folder + args.dset + "/" + names[args.t] + "_list.txt"
 
             test_target(args, netF, netC)
->>>>>>> 3b137b1 (Initial commit)
