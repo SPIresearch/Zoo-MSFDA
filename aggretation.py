@@ -63,12 +63,6 @@ class OursEnsemble(nn.Module):
         model_features,
         model_outs=[],
     ):
-        """
-        :param classes: Number of classification categories
-        :param source: Number of source
-        :param classifier_dims: Dimension of the classifier
-        :param annealing_epoch: KL divergence annealing epoch during training
-        """
         super(OursEnsemble, self).__init__()
         self.source = source
         self.classes = classes
@@ -86,7 +80,7 @@ class OursEnsemble(nn.Module):
         self.loss = 0
         self.tran_tran = torch.tensor(
             tran_tran, dtype=torch.float32
-        )  # nn.Parameter(3*torch.tensor(tran_tran, dtype=torch.float32))
+        )  
         for i in range(self.source):
             self.netF.append(netF_list[i])
             self.netC.append(netC_list[i])
@@ -99,7 +93,7 @@ class OursEnsemble(nn.Module):
         self.tran = nn.Softmax(0)(self.tran_tran)
         for i in range(self.optimized_models):
             self.loss += IM_loss(self.outputs_all[i]) * self.tran[i]
-        # self.loss+=IM_loss(self.outputs_all_w)
+        
         return self.loss
 
     def forward(self, x, idx):
@@ -126,7 +120,7 @@ class OursEnsemble(nn.Module):
                 all_feature = self.features_all[i]
             else:
                 all_feature = torch.cat([all_feature, self.features_all[i]], 1)
-        # self.outputs_all_w/=self.source
+        
         return all_feature, self.outputs_all_w
 
     def forward_mix(self, x, idx, mix_idx, l):
@@ -150,7 +144,7 @@ class OursEnsemble(nn.Module):
                 input_a, input_b = fea, fea[mix_idx]
                 self.features_all[i] = (
                     l * input_a + (1 - l) * input_b
-                )  # self.model_features[i][idx].cuda()
+                )  
 
             outputs = self.netC[i](self.features_all[i])
             self.outputs_all[i] = outputs
@@ -159,7 +153,7 @@ class OursEnsemble(nn.Module):
                 all_feature = self.features_all[i]
             else:
                 all_feature = torch.cat([all_feature, self.features_all[i]], 1)
-        # self.outputs_all_w/=self.source
+        
         return all_feature, self.outputs_all_w
 
     def forward_tran(self, x, idx):
@@ -185,5 +179,5 @@ class OursEnsemble(nn.Module):
                 all_feature = self.features_all[i]
             else:
                 all_feature = torch.cat([all_feature, self.features_all[i]], 1)
-        # self.outputs_all_w/=self.source
+        
         return all_feature, self.outputs_all_w
